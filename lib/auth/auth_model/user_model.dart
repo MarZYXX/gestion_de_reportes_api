@@ -28,7 +28,7 @@ class UserModel {
   factory UserModel.fromFirestore(DocumentSnapshot doc, String id) {
     final data = doc.data() as Map<String, dynamic>;
     return UserModel(
-      id: data['id'] ?? '',
+      id: id,
       nombre: data['nombre'] ?? '',
       apellidoPaterno: data['apellidoPaterno'] ?? '',
       apellidoMaterno: data['apellidoMaterno'] ?? '',
@@ -55,10 +55,7 @@ class UserModel {
     };
   }
 
-  UserModel copyWith({
-    String? telefono,
-    String? domicilio,
-  }) {
+  UserModel copyWith({String? telefono, String? domicilio}) {
     return UserModel(
       id: id,
       nombre: nombre,

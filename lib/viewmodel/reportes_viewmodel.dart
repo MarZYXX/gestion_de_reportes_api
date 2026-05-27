@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../repo/reporte_service.dart';
+import 'package:flutter/material.dart';
+
 import '../model/report_model.dart';
-import 'dart:async';
+import '../repo/reporte_service.dart';
 
 class ReportesViewModel extends ChangeNotifier {
   final ReporteService _reporteService = ReporteService();
@@ -16,50 +16,32 @@ class ReportesViewModel extends ChangeNotifier {
   String filtroPrioridadLocal = 'todas';
   bool mostrarSoloAtendidos = false;
 
-  StreamSubscription? _reportesSubscription;
-
   Future<void> cargarReportes() async {
     try {
       cargando = true;
       error = null;
       notifyListeners();
 
-      final userId = _auth.currentUser?.uid;
-
-      Stream<List<ReporteModel>> stream;
-
-      if (filtroActual == 'mis_reportes' && userId != null) {
-        stream = _reporteService.obtenerReportesPorUsuario(userId);
-      } else if (filtroActual == 'alta' || filtroActual == 'media' || filtroActual == 'baja') {
-        stream = _reporteService.obtenerReportesPorSeveridad(filtroActual);
+      if (filtroActual == 'mis_reportes' && _auth.currentUser != null) {
+        reportes = await _reporteService.obtenerReportesPorUsuario();
+      } else if (filtroActual == 'alta' ||
+          filtroActual == 'media' ||
+          filtroActual == 'baja') {
+        reportes = await _reporteService.obtenerReportesPorSeveridad(
+          filtroActual,
+        );
       } else if (ordenActual == 'corroboraciones') {
-        stream = _reporteService.obtenerReportesOrdenadosPorCorroboraciones();
+        reportes = await _reporteService
+            .obtenerReportesOrdenadosPorCorroboraciones();
       } else {
-        stream = _reporteService.obtenerTodosReportes();
+        reportes = await _reporteService.obtenerTodosReportes();
       }
-
-      await _reportesSubscription?.cancel();
-
-      _reportesSubscription = stream.listen((reportesList) {
-        reportes = reportesList;
-        cargando = false;
-        notifyListeners();
-      }, onError: (e) {
-        error = e.toString();
-        cargando = false;
-        notifyListeners();
-      });
     } catch (e) {
       error = e.toString();
+    } finally {
       cargando = false;
       notifyListeners();
     }
-  }
-
-  @override
-  void dispose() {
-    _reportesSubscription?.cancel();
-    super.dispose();
   }
 
   void cambiarFiltro(String filtro) {
@@ -74,9 +56,8 @@ class ReportesViewModel extends ChangeNotifier {
 
   Future<void> corroborarReporte(String reportId) async {
     try {
-      final userId = _auth.currentUser?.uid;
-      if (userId == null) return;
-      await _reporteService.corroborarReporte(reportId, userId);
+      await _reporteService.corroborarReporte(reportId);
+      await cargarReportes();
     } catch (e) {
       error = e.toString();
       notifyListeners();
@@ -91,7 +72,9 @@ class ReportesViewModel extends ChangeNotifier {
 
   List<ReporteModel> get reportesFiltrados {
     return reportes.where((r) {
-      final cumplePrioridad = filtroPrioridadLocal == 'todas' || r.severidad == filtroPrioridadLocal;
+      final cumplePrioridad =
+          filtroPrioridadLocal == 'todas' ||
+          r.severidad == filtroPrioridadLocal;
       final cumpleAtendido = mostrarSoloAtendidos ? r.estaCompleto : true;
       return cumplePrioridad && cumpleAtendido;
     }).toList();
@@ -110,6 +93,7 @@ class ReportesViewModel extends ChangeNotifier {
   Future<void> eliminarReporteLocal(String reportId) async {
     try {
       await _reporteService.eliminarReporte(reportId);
+      await cargarReportes();
     } catch (e) {
       error = e.toString();
       notifyListeners();

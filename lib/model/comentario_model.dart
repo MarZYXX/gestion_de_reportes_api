@@ -22,4 +22,13 @@ class ComentarioModel {
       fecha: (data['fecha'] as Timestamp).toDate(),
     );
   }
+
+  factory ComentarioModel.fromJson(Map<String, dynamic> data) {
+    return ComentarioModel(
+      id: data['id']?.toString() ?? '',
+      userId: data['userId']?.toString() ?? '',
+      texto: data['texto']?.toString() ?? '',
+      fecha: DateTime.parse(data['fecha'].toString()),
+    );
+  }
 }

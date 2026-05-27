@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../auth_viewmodel/auth_viewmodel.dart';
+import '../../ui/registered_user_screen.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,8 +22,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _ocultarPassword = true;
   bool _ocultarConfirmPassword = true;
-
-  String _selectedRole = 'usuario';
 
   @override
   void initState() {
@@ -60,20 +59,41 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                 ),
-                Positioned(top: 60, left: -50, child: _circle(200, Colors.white.withOpacity(0.05))),
-                Positioned(top: 140, right: -30, child: _circle(150, Colors.white.withOpacity(0.05))),
+                Positioned(
+                  top: 60,
+                  left: -50,
+                  child: _circle(200, Colors.white.withOpacity(0.05)),
+                ),
+                Positioned(
+                  top: 140,
+                  right: -30,
+                  child: _circle(150, Colors.white.withOpacity(0.05)),
+                ),
                 SafeArea(
                   child: Column(
                     children: [
                       const SizedBox(height: 40),
-                      const Text("Crea tu cuenta", style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                      const Text(
+                        "Crea tu cuenta",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 20),
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+                          padding: const EdgeInsets.only(
+                            top: 24,
+                            left: 24,
+                            right: 24,
+                          ),
                           decoration: const BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(40),
+                            ),
                           ),
                           child: SingleChildScrollView(
                             physics: const BouncingScrollPhysics(),
@@ -82,11 +102,23 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: Column(
                                 children: [
                                   const SizedBox(height: 10),
-                                  _buildTextFieldNormal(_nombreController, "Nombre", Icons.person),
+                                  _buildTextFieldNormal(
+                                    _nombreController,
+                                    "Nombre",
+                                    Icons.person,
+                                  ),
                                   const SizedBox(height: 15),
-                                  _buildTextFieldNormal(_apellidoPaternoController, "Apellido Paterno", Icons.person),
+                                  _buildTextFieldNormal(
+                                    _apellidoPaternoController,
+                                    "Apellido Paterno",
+                                    Icons.person,
+                                  ),
                                   const SizedBox(height: 15),
-                                  _buildTextFieldNormal(_apellidoMaternoController, "Apellido Materno", Icons.person),
+                                  _buildTextFieldNormal(
+                                    _apellidoMaternoController,
+                                    "Apellido Materno",
+                                    Icons.person,
+                                  ),
                                   const SizedBox(height: 15),
 
                                   TextFormField(
@@ -95,11 +127,17 @@ class _RegisterPageState extends State<RegisterPage> {
                                     decoration: InputDecoration(
                                       labelText: 'Correo',
                                       prefixIcon: const Icon(Icons.email),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) return 'Ingresa tu correo';
-                                      if (!value.contains('@')) return 'Ingresa un correo válido';
+                                      if (value == null || value.isEmpty) {
+                                        return 'Ingresa tu correo';
+                                      }
+                                      if (!value.contains('@')) {
+                                        return 'Ingresa un correo válido';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -111,15 +149,29 @@ class _RegisterPageState extends State<RegisterPage> {
                                     decoration: InputDecoration(
                                       labelText: 'Contraseña',
                                       prefixIcon: const Icon(Icons.lock),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       suffixIcon: IconButton(
-                                        icon: Icon(_ocultarPassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
-                                        onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                                        icon: Icon(
+                                          _ocultarPassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          color: Colors.grey,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _ocultarPassword =
+                                              !_ocultarPassword,
+                                        ),
                                       ),
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) return "Introducir contraseña";
-                                      if (value.length < 6) return "Mínimo 6 caracteres";
+                                      if (value == null || value.isEmpty) {
+                                        return "Introducir contraseña";
+                                      }
+                                      if (value.length < 6) {
+                                        return "Mínimo 6 caracteres";
+                                      }
                                       return null;
                                     },
                                   ),
@@ -131,45 +183,57 @@ class _RegisterPageState extends State<RegisterPage> {
                                     decoration: InputDecoration(
                                       labelText: 'Confirmar Contraseña',
                                       prefixIcon: const Icon(Icons.lock),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       suffixIcon: IconButton(
-                                        icon: Icon(_ocultarConfirmPassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
-                                        onPressed: () => setState(() => _ocultarConfirmPassword = !_ocultarConfirmPassword),
+                                        icon: Icon(
+                                          _ocultarConfirmPassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          color: Colors.grey,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _ocultarConfirmPassword =
+                                              !_ocultarConfirmPassword,
+                                        ),
                                       ),
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) return "Confirma tu contraseña";
-                                      if (value != _passwordController.text) return "Las contraseñas no coinciden";
+                                      if (value == null || value.isEmpty) {
+                                        return "Confirma tu contraseña";
+                                      }
+                                      if (value != _passwordController.text) {
+                                        return "Las contraseñas no coinciden";
+                                      }
                                       return null;
                                     },
                                   ),
 
-                                  const SizedBox(height: 20),
-                                  Container(
-                                    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: DropdownButtonFormField<String>(
-                                      value: _selectedRole,
-                                      decoration: const InputDecoration(border: InputBorder.none, prefixIcon: Icon(Icons.person_outline), labelText: 'Rol'),
-                                      items: const [
-                                        DropdownMenuItem(value: 'usuario', child: Text('Usuario')),
-                                        DropdownMenuItem(value: 'admin', child: Text('Administrador')),
-                                      ],
-                                      onChanged: (value) => setState(() => _selectedRole = value!),
-                                    ),
-                                  ),
                                   const SizedBox(height: 30),
                                   Container(
                                     padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.shade200)),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.blue.shade200,
+                                      ),
+                                    ),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: Colors.blue.shade700,
+                                        ),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            _selectedRole == 'admin' ? 'Los administradores pueden gestionar reportes y modificar severidades.' : 'Los usuarios pueden crear reportes y corroborar incidentes.',
-                                            style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+                                            'Tu cuenta ciudadana permite crear reportes y corroborar incidentes.',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.blue.shade900,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -179,15 +243,33 @@ class _RegisterPageState extends State<RegisterPage> {
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
-                                      onPressed: viewModel.isLoading ? null : () => _handleRegister(context, viewModel),
-                                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                                      child: viewModel.isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Registrarse"),
+                                      onPressed: viewModel.isLoading
+                                          ? null
+                                          : () => _handleRegister(viewModel),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                      child: viewModel.isLoading
+                                          ? const CircularProgressIndicator(
+                                              color: Colors.white,
+                                            )
+                                          : const Text("Registrarse"),
                                     ),
                                   ),
                                   const SizedBox(height: 15),
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('¿Ya tienes cuenta? Inicia sesión', style: TextStyle(color: Colors.blue)),
+                                    child: const Text(
+                                      '¿Ya tienes cuenta? Inicia sesión',
+                                      style: TextStyle(color: Colors.blue),
+                                    ),
                                   ),
                                   const SizedBox(height: 40),
                                 ],
@@ -207,7 +289,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Future<void> _handleRegister(BuildContext context, AuthViewModel viewModel) async {
+  Future<void> _handleRegister(AuthViewModel viewModel) async {
     if (!_formKey.currentState!.validate()) return;
 
     final success = await viewModel.register(
@@ -216,33 +298,55 @@ class _RegisterPageState extends State<RegisterPage> {
       apellidoMaterno: _apellidoMaternoController.text.trim(),
       correo: _emailController.text.trim(), // Se envía libre, como estaba
       contrasena: _passwordController.text.trim(),
-      role: _selectedRole,
     );
 
     if (success) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("¡Registro exitoso! Ahora inicia sesión como ${_selectedRole == 'admin' ? 'Administrador' : 'Usuario'}"), backgroundColor: Colors.green, duration: const Duration(seconds: 3)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registro exitoso'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
         _nombreController.clear();
         _apellidoPaternoController.clear();
         _apellidoMaternoController.clear();
         _emailController.clear();
         _passwordController.clear();
         _confirmPasswordController.clear();
-        Navigator.pop(context);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const RegisteredUserScreen()),
+          (route) => false,
+        );
       }
     } else {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(viewModel.error ?? "Error al registrarse")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(viewModel.error ?? "Error al registrarse")),
+        );
+      }
     }
   }
 
   Widget _circle(double size, Color color) {
-    return Container(height: size, width: size, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
   }
 
-  Widget _buildTextFieldNormal(TextEditingController controller, String hint, IconData icon) {
+  Widget _buildTextFieldNormal(
+    TextEditingController controller,
+    String hint,
+    IconData icon,
+  ) {
     return TextFormField(
       controller: controller,
-      validator: (value) => (value == null || value.isEmpty) ? "Ingrese $hint" : null,
+      validator: (value) =>
+          (value == null || value.isEmpty) ? "Ingrese $hint" : null,
       decoration: InputDecoration(
         labelText: hint,
         prefixIcon: Icon(icon),

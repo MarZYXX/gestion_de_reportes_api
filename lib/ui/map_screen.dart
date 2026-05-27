@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -12,7 +11,6 @@ import '../model/report_model.dart';
 import '../auth/auth_ui/login_screen.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'dart:convert';
-
 import 'crear_reporte_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -32,7 +30,6 @@ class _MapScreenState extends State<MapScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<MapaViewModel>(context, listen: false);
       viewModel.inicializarMapa();
-      viewModel.cargarReportes();
       viewModel.onReportTapped = (reporte) {
         _mostrarDetallesReporte(reporte);
       };
@@ -53,8 +50,10 @@ class _MapScreenState extends State<MapScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Cerrar sesión',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Cerrar sesión',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -65,7 +64,7 @@ class _MapScreenState extends State<MapScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     }
@@ -76,16 +75,16 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('reportes').doc(
-              reporteInicial.id).snapshots(),
+        return FutureBuilder<ReporteModel>(
+          future: ReporteService().obtenerReporte(reporteInicial.id),
           builder: (context, snapshot) {
             if (!snapshot.hasData)
               return const Center(child: CircularProgressIndicator());
 
-            final reporte = ReporteModel.fromFirestore(snapshot.data!);
+            final reporte = snapshot.data!;
             return DraggableScrollableSheet(
               initialChildSize: 0.5,
               minChildSize: 0.3,
@@ -114,45 +113,59 @@ class _MapScreenState extends State<MapScreen> {
                             child: Text(
                               reporte.titulo,
                               style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold),
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           Chip(
                             label: Text(reporte.getTextoSeveridad()),
-                            backgroundColor:
-                            reporte.getColorSeveridad().withOpacity(0.2),
-                            labelStyle:
-                            TextStyle(color: reporte.getColorSeveridad()),
+                            backgroundColor: reporte
+                                .getColorSeveridad()
+                                .withOpacity(0.2),
+                            labelStyle: TextStyle(
+                              color: reporte.getColorSeveridad(),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(reporte.descripcion,
-                          style: const TextStyle(fontSize: 16)),
+                      Text(
+                        reporte.descripcion,
+                        style: const TextStyle(fontSize: 16),
+                      ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            '${reporte.fechaIncidente.day}/${reporte
-                                .fechaIncidente.month}/${reporte.fechaIncidente
-                                .year}',
+                            '${reporte.fechaIncidente.day}/${reporte.fechaIncidente.month}/${reporte.fechaIncidente.year}',
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                           const SizedBox(width: 16),
-                          Icon(Icons.access_time,
-                              size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
-                          Text(reporte.getHoraFormateada(),
-                              style: TextStyle(color: Colors.grey[600])),
+                          Text(
+                            reporte.getHoraFormateada(),
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       if (reporte.urlsImagenes.isNotEmpty) ...[
-                        const Text('Imágenes:',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Imágenes:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 8),
                         SizedBox(
                           height: 120,
@@ -163,13 +176,14 @@ class _MapScreenState extends State<MapScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: GestureDetector(
-                                  onTap: () =>
-                                      _verImagenPantallaCompleta(
-                                          reporte.urlsImagenes[index]),
+                                  onTap: () => _verImagenPantallaCompleta(
+                                    reporte.urlsImagenes[index],
+                                  ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: _construirImagenSegura(
-                                        reporte.urlsImagenes[index]),
+                                      reporte.urlsImagenes[index],
+                                    ),
                                   ),
                                 ),
                               );
@@ -184,15 +198,17 @@ class _MapScreenState extends State<MapScreen> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              Provider
-                                  .of<MapaViewModel>(context, listen: false)
-                                  .corroborarReporte(reporte.id);
+                              Provider.of<MapaViewModel>(
+                                context,
+                                listen: false,
+                              ).corroborarReporte(reporte.id);
                             },
                             child: Column(
                               children: [
                                 Icon(
                                   reporte.corroboradoPor.contains(
-                                      FirebaseAuth.instance.currentUser?.uid)
+                                        FirebaseAuth.instance.currentUser?.uid,
+                                      )
                                       ? Icons.thumb_up
                                       : Icons.thumb_up_alt_outlined,
                                   color: Colors.blue,
@@ -211,8 +227,10 @@ class _MapScreenState extends State<MapScreen> {
                             },
                             child: const Column(
                               children: [
-                                Icon(Icons.comment_outlined,
-                                    color: Colors.orange),
+                                Icon(
+                                  Icons.comment_outlined,
+                                  color: Colors.orange,
+                                ),
                                 SizedBox(height: 4),
                                 Text('Ver'),
                                 Text('Comentar'),
@@ -223,8 +241,9 @@ class _MapScreenState extends State<MapScreen> {
                           Column(
                             children: [
                               Icon(
-                                reporte.estaCompleto ? Icons.verified : Icons
-                                    .pending_actions,
+                                reporte.estaCompleto
+                                    ? Icons.verified
+                                    : Icons.pending_actions,
                                 color: reporte.estaCompleto
                                     ? Colors.green
                                     : Colors.grey,
@@ -251,6 +270,7 @@ class _MapScreenState extends State<MapScreen> {
   void _mostrarVentanaComentarios(BuildContext context, ReporteModel reporte) {
     final TextEditingController comentarioController = TextEditingController();
     final ReporteService reporteService = ReporteService();
+    VoidCallback recargarComentarios = () {};
 
     showModalBottomSheet(
       context: context,
@@ -258,7 +278,9 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             height: MediaQuery.of(context).size.height * 0.6,
             padding: const EdgeInsets.all(16),
@@ -268,71 +290,149 @@ class _MapScreenState extends State<MapScreen> {
             ),
             child: Column(
               children: [
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 const SizedBox(height: 16),
-                const Text('Comentarios de los Vecinos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Comentarios de los Vecinos',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const Divider(),
 
                 Expanded(
-                  child: StreamBuilder<List<ComentarioModel>>(
-                    stream: reporteService.obtenerComentarios(reporte.id),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(
-                          child: Text('Aún no hay comentarios.\nSé el primero en aportar información.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                        );
-                      }
-
-                      final comentarios = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: comentarios.length,
-                        itemBuilder: (context, index) {
-                          final comentario = comentarios[index];
-                          final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-                          final esMiComentario = currentUserUid == comentario.userId;
-
-                          return Card(
-                            elevation: 0,
-                            color: Colors.grey.shade100,
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.blue.shade100,
-                                child: const Icon(Icons.person, color: Colors.blue),
+                  child: StatefulBuilder(
+                    builder: (context, setCommentsState) {
+                      recargarComentarios = () => setCommentsState(() {});
+                      return FutureBuilder<List<ComentarioModel>>(
+                        future: reporteService.obtenerComentarios(reporte.id),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'Aún no hay comentarios.\nSé el primero en aportar información.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
                               ),
-                              title: Text(esMiComentario ? 'Tú (Anónimo)' : 'Vecino Anónimo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(comentario.texto),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${comentario.fecha.day}/${comentario.fecha.month}/${comentario.fecha.year}',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                            );
+                          }
+
+                          final comentarios = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: comentarios.length,
+                            itemBuilder: (context, index) {
+                              final comentario = comentarios[index];
+                              final currentUserUid =
+                                  FirebaseAuth.instance.currentUser?.uid;
+                              final esMiComentario =
+                                  currentUserUid == comentario.userId;
+
+                              return Card(
+                                elevation: 0,
+                                color: Colors.grey.shade100,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.blue.shade100,
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.blue,
+                                    ),
                                   ),
-                                ],
-                              ),
-                              trailing: esMiComentario
-                                  ? PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert, color: Colors.grey),
-                                onSelected: (value) {
-                                  if (value == 'editar') {
-                                    _editarComentario(reporte.id, comentario, reporteService);
-                                  } else if (value == 'eliminar') {
-                                    _eliminarComentario(reporte.id, comentario.id, reporteService);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(value: 'editar', child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue), SizedBox(width: 8), Text('Editar')])),
-                                  const PopupMenuItem(value: 'eliminar', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Eliminar')])),
-                                ],
-                              )
-                                  : null,
-                            ),
+                                  title: Text(
+                                    esMiComentario
+                                        ? 'Tú (Anónimo)'
+                                        : 'Vecino Anónimo',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      Text(comentario.texto),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${comentario.fecha.day}/${comentario.fecha.month}/${comentario.fecha.year}',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: esMiComentario
+                                      ? PopupMenuButton<String>(
+                                          icon: const Icon(
+                                            Icons.more_vert,
+                                            color: Colors.grey,
+                                          ),
+                                          onSelected: (value) {
+                                            if (value == 'editar') {
+                                              _editarComentario(
+                                                reporte.id,
+                                                comentario,
+                                                reporteService,
+                                                recargarComentarios,
+                                              );
+                                            } else if (value == 'eliminar') {
+                                              _eliminarComentario(
+                                                reporte.id,
+                                                comentario.id,
+                                                reporteService,
+                                                recargarComentarios,
+                                              );
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem(
+                                              value: 'editar',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.edit,
+                                                    size: 18,
+                                                    color: Colors.blue,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text('Editar'),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'eliminar',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.delete,
+                                                    size: 18,
+                                                    color: Colors.red,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text('Eliminar'),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : null,
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -349,16 +449,28 @@ class _MapScreenState extends State<MapScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           hintText: 'Añadir un comentario (Anónimo)...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
                       child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: () async {
                           final texto = comentarioController.text.trim();
                           if (texto.isEmpty) return;
@@ -366,13 +478,18 @@ class _MapScreenState extends State<MapScreen> {
                           final userId = FirebaseAuth.instance.currentUser?.uid;
                           if (userId != null) {
                             comentarioController.clear();
-                            await reporteService.agregarComentario(reporte.id, userId, texto);
+                            await reporteService.agregarComentario(
+                              reporte.id,
+                              userId,
+                              texto,
+                            );
+                            recargarComentarios();
                           }
                         },
                       ),
-                    )
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -381,8 +498,15 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _editarComentario(String reportId, ComentarioModel comentario, ReporteService servicio) {
-    final TextEditingController editController = TextEditingController(text: comentario.texto);
+  void _editarComentario(
+    String reportId,
+    ComentarioModel comentario,
+    ReporteService servicio,
+    VoidCallback onUpdated,
+  ) {
+    final TextEditingController editController = TextEditingController(
+      text: comentario.texto,
+    );
 
     showDialog(
       context: context,
@@ -406,7 +530,12 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () async {
               final nuevoTexto = editController.text.trim();
               if (nuevoTexto.isNotEmpty && nuevoTexto != comentario.texto) {
-                await servicio.actualizarComentario(reportId, comentario.id, nuevoTexto);
+                await servicio.actualizarComentario(
+                  reportId,
+                  comentario.id,
+                  nuevoTexto,
+                );
+                onUpdated();
               }
               if (context.mounted) Navigator.pop(context);
             },
@@ -417,12 +546,19 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _eliminarComentario(String reportId, String comentarioId, ReporteService servicio) {
+  void _eliminarComentario(
+    String reportId,
+    String comentarioId,
+    ReporteService servicio,
+    VoidCallback onUpdated,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Comentario'),
-        content: const Text('¿Estás seguro de que deseas borrar este comentario? Esta acción no se puede deshacer.'),
+        content: const Text(
+          '¿Estás seguro de que deseas borrar este comentario? Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -432,9 +568,13 @@ class _MapScreenState extends State<MapScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               await servicio.eliminarComentario(reportId, comentarioId);
+              onUpdated();
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -464,7 +604,6 @@ class _MapScreenState extends State<MapScreen> {
                   ElevatedButton(
                     onPressed: () {
                       viewModel.inicializarMapa();
-                      viewModel.cargarReportes();
                     },
                     child: const Text('Reintentar'),
                   ),
@@ -476,9 +615,9 @@ class _MapScreenState extends State<MapScreen> {
 
         final posicion = viewModel.posicionActual != null
             ? LatLng(
-          viewModel.posicionActual!.latitude,
-          viewModel.posicionActual!.longitude,
-        )
+                viewModel.posicionActual!.latitude,
+                viewModel.posicionActual!.longitude,
+              )
             : _posicionDefault;
 
         return Scaffold(
@@ -499,14 +638,11 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               FlutterMap(
                 mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: posicion,
-                  initialZoom: 14,
-                ),
+                options: MapOptions(initialCenter: posicion, initialZoom: 14),
                 children: [
-
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.example.gestion_de_reportes',
                   ),
 
@@ -519,14 +655,18 @@ class _MapScreenState extends State<MapScreen> {
                       maxZoom: 15,
                       markers: _crearListaDeMarcadores(viewModel.reportes),
                       builder: (context, markers) {
-                        final reportMarkers = markers.whereType<ReporteMarker>().toList();
+                        final reportMarkers = markers
+                            .whereType<ReporteMarker>()
+                            .toList();
 
                         bool tieneAlta = false;
                         bool tieneMedia = false;
 
                         for (var marker in reportMarkers) {
-                          if (marker.reporte.severidad == 'alta') tieneAlta = true;
-                          if (marker.reporte.severidad == 'media') tieneMedia = true;
+                          if (marker.reporte.severidad == 'alta')
+                            tieneAlta = true;
+                          if (marker.reporte.severidad == 'media')
+                            tieneMedia = true;
                         }
 
                         Color colorRecuadro = Colors.green;
@@ -538,7 +678,9 @@ class _MapScreenState extends State<MapScreen> {
 
                         return GestureDetector(
                           onTap: () {
-                            final listaReportes = reportMarkers.map((m) => m.reporte).toList();
+                            final listaReportes = reportMarkers
+                                .map((m) => m.reporte)
+                                .toList();
                             _mostrarVentanaFlotante(context, listaReportes);
                           },
                           child: Container(
@@ -546,10 +688,16 @@ class _MapScreenState extends State<MapScreen> {
                               color: colorRecuadro,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black26, blurRadius: 4),
+                              ],
                             ),
                             child: const Center(
-                              child: Icon(Icons.add, color: Colors.white, size: 24),
+                              child: Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                             ),
                           ),
                         );
@@ -572,12 +720,20 @@ class _MapScreenState extends State<MapScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black26, blurRadius: 4),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Prioridad', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      const Text(
+                        'Prioridad',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       _buildLegendItem(Colors.red, 'Alta'),
                       _buildLegendItem(Colors.orange, 'Media'),
@@ -595,7 +751,8 @@ class _MapScreenState extends State<MapScreen> {
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const CrearReporteScreen()),
+                        builder: (context) => const CrearReporteScreen(),
+                      ),
                     );
                     if (result == true) {
                       viewModel.cargarReportes();
@@ -631,7 +788,10 @@ class _MapScreenState extends State<MapScreen> {
     }).toList();
   }
 
-  void _mostrarVentanaFlotante(BuildContext context, List<ReporteModel> reportesOriginales) {
+  void _mostrarVentanaFlotante(
+    BuildContext context,
+    List<ReporteModel> reportesOriginales,
+  ) {
     final List<ReporteModel> reportesOrdenados = List.from(reportesOriginales);
     reportesOrdenados.sort((a, b) {
       int getValor(String severidad) {
@@ -639,69 +799,95 @@ class _MapScreenState extends State<MapScreen> {
         if (severidad == 'media') return 2;
         return 3;
       }
+
       return getValor(a.severidad).compareTo(getValor(b.severidad));
     });
 
     showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (context) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
-                const SizedBox(height: 16),
-
-                Text(
-                  '${reportesOrdenados.length} Incidentes en esta zona',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 16),
+              ),
+              const SizedBox(height: 16),
 
-                Flexible(
-                  child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: reportesOrdenados.length,
-                      itemBuilder: (context, index) {
-                        final r = reportesOrdenados[index];
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                              side: BorderSide(color: r.getColorSeveridad().withOpacity(0.5)),
-                              borderRadius: BorderRadius.circular(12)
-                          ),
-                          child: ListTile(
-                            title: Text(r.titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(r.descripcion, maxLines: 2, overflow: TextOverflow.ellipsis),
-                            trailing: Icon(Icons.chevron_right, color: r.getColorSeveridad()),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _mostrarDetallesReporte(r);
-                            },
-                          ),
-                        );
-                      }
-                  ),
+              Text(
+                '${reportesOrdenados.length} Incidentes en esta zona',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-          );
-        }
+              ),
+              const SizedBox(height: 16),
+
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: reportesOrdenados.length,
+                  itemBuilder: (context, index) {
+                    final r = reportesOrdenados[index];
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(
+                          color: r.getColorSeveridad().withOpacity(0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        title: Text(
+                          r.titulo,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          r.descripcion,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: r.getColorSeveridad(),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _mostrarDetallesReporte(r);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _construirImagenSegura(String rutaOBase64) {
     try {
-      if (rutaOBase64.startsWith('/data') || rutaOBase64.startsWith('file://')) {
+      if (rutaOBase64.startsWith('/data') ||
+          rutaOBase64.startsWith('file://')) {
         return Image.file(
           File(rutaOBase64),
           width: 120,
@@ -763,9 +949,7 @@ class _MapScreenState extends State<MapScreen> {
                   panEnabled: true,
                   minScale: 0.5,
                   maxScale: 4.0,
-                  child: Center(
-                    child: _construirImagenSegura(rutaOBase64),
-                  ),
+                  child: Center(child: _construirImagenSegura(rutaOBase64)),
                 ),
                 Positioned(
                   top: 40,
@@ -776,7 +960,11 @@ class _MapScreenState extends State<MapScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -797,7 +985,11 @@ class _MapScreenState extends State<MapScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 8),
           Text(label, style: const TextStyle(fontSize: 12)),
         ],

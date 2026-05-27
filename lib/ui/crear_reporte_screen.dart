@@ -132,12 +132,11 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
     );
   }
 
-  // --- LÓGICA DE IMÁGENES COMPRIMIDAS PARA NO SATURAR FIRESTORE ---
   Future<void> _capturarImagen(ImageSource source) async {
     final XFile? imagen = await _imagePicker.pickImage(
       source: source,
-      imageQuality: 50, // Comprimimos
-      maxWidth: 800,    // Limitamos tamaño para que el Base64 no sea inmenso
+      imageQuality: 50,
+      maxWidth: 800,
     );
     if (imagen != null) {
       setState(() {
@@ -255,7 +254,6 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
     try {
       final userId = _auth.currentUser?.uid;
 
-      // Transformamos las imágenes físicas en texto antes de armar el reporte
       List<String> urlsFinales = await _subirImagenes(_urlsImagenes);
 
       if (widget.reporteOriginal == null) {

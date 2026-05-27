@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../auth_model/auth_repository.dart';
 import '../auth_model/user_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _repository = AuthRepository();
@@ -37,18 +37,10 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final userCredential = await _repository.login(email, password);
-      final String uid = userCredential.user!.uid;
-
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-      if (doc.exists) {
-        final userModel = UserModel.fromFirestore(doc, uid);
-        _setCurrentUser(userModel);
-      } else {
-        _setError('Datos de usuario no encontrados');
-        return false;
-      }
-
+      final userModel = await _repository.loadOrCreateUserProfile(
+        userCredential.user!,
+      );
+      _setCurrentUser(userModel);
       return true;
     } catch (e) {
       _setError(_mapLoginError(e));
@@ -61,17 +53,25 @@ class AuthViewModel extends ChangeNotifier {
   String _mapLoginError(Object e) {
     if (e is FirebaseAuthException) {
       switch (e.code) {
+        case 'invalid-credential':
         case 'user-not-found':
-          return 'User not found';
         case 'wrong-password':
-          return 'Incorrect password';
+          return 'Correo o contrasena incorrectos';
         case 'invalid-email':
-          return 'Invalid email';
+          return 'El correo no es valido';
+        case 'too-many-requests':
+          return 'Demasiados intentos. Intenta mas tarde';
         default:
-          return 'Login failed';
+          return 'No fue posible iniciar sesion: ${e.code}';
       }
     }
-    return 'Something went wrong';
+    if (e is FirebaseException) {
+      if (e.code == 'permission-denied') {
+        return 'Firestore no permite leer o crear tu perfil. Revisa sus reglas.';
+      }
+      return 'Error de Firebase: ${e.code}';
+    }
+    return 'No fue posible iniciar sesion';
   }
 
   Future<bool> register({
@@ -80,7 +80,6 @@ class AuthViewModel extends ChangeNotifier {
     required String apellidoMaterno,
     required String correo,
     required String contrasena,
-    required String role,
   }) async {
     _setLoading(true);
     _setError(null);
@@ -92,7 +91,6 @@ class AuthViewModel extends ChangeNotifier {
         apellidoMaterno: apellidoMaterno,
         correo: correo,
         contrasena: contrasena,
-        role: role,
       );
       _setCurrentUser(user);
       return true;
@@ -108,20 +106,26 @@ class AuthViewModel extends ChangeNotifier {
     if (e is FirebaseAuthException) {
       switch (e.code) {
         case 'email-already-in-use':
-          return 'Email already in use';
+          return 'Este correo ya esta registrado. Intenta iniciar sesion.';
         case 'invalid-email':
-          return 'Invalid email';
+          return 'El correo no es valido';
         case 'weak-password':
-          return 'Password is too weak';
+          return 'La contrasena es demasiado debil';
         default:
-          return 'Registration failed';
+          return 'No fue posible registrarse: ${e.code}';
       }
     }
-    return 'Something went wrong';
+    if (e is FirebaseException) {
+      if (e.code == 'permission-denied') {
+        return 'La cuenta no pudo guardarse en Firestore. Revisa sus reglas.';
+      }
+      return 'Error de Firebase: ${e.code}';
+    }
+    return 'No fue posible completar el registro';
   }
 
-  Future<String?> getUserRole(String userId) async {
-    return await _repository.getUserRole(userId);
+  Future<String?> getUserRole(String userId) {
+    return _repository.getUserRole(userId);
   }
 
   void clearError() {

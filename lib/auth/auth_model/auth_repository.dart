@@ -1,35 +1,27 @@
-import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
-import '../auth_model/user_model.dart';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+
+import 'user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<UserCredential> login(String email, String password) async {
-    try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } catch (e) {
-      throw Exception('Error al iniciar sesión: $e');
-    }
+  Future<UserCredential> login(String email, String password) {
+    return _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
   Future<String> subirImagenBase64(String uid, File imageFile) async {
     try {
       final bytes = await imageFile.readAsBytes();
-      String base64Image = base64Encode(bytes);
-      String dataUrl = "data:image/jpeg;base64,$base64Image";
+      final base64Image = base64Encode(bytes);
+      final dataUrl = 'data:image/jpeg;base64,$base64Image';
 
-      debugPrint("Tamaño del Base64: ${dataUrl.length} caracteres");
+      debugPrint('Tamano del Base64: ${dataUrl.length} caracteres');
 
       await _firestore.collection('users').doc(uid).update({
         'fotoUrl': dataUrl,
@@ -37,7 +29,7 @@ class AuthRepository {
 
       return dataUrl;
     } catch (e) {
-      throw 'Error en Firestore: $e';
+      throw Exception('Error al guardar la imagen de perfil: $e');
     }
   }
 
@@ -47,7 +39,6 @@ class AuthRepository {
     required String apellidoMaterno,
     required String correo,
     required String contrasena,
-    required String role,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: correo,
@@ -60,16 +51,49 @@ class AuthRepository {
       apellidoPaterno: apellidoPaterno,
       apellidoMaterno: apellidoMaterno,
       correo: correo,
-      role: role,
+      role: 'usuario',
       createdAt: DateTime.now(),
     );
 
-    await _firestore
-        .collection('users')
-        .doc(userCredential.user!.uid)
-        .set(user.toFirestore());
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set(user.toFirestore());
+    } catch (_) {
+      try {
+        await userCredential.user?.delete();
+        await _auth.signOut();
+      } catch (_) {
+        // If rollback fails, login repairs this Authentication-only account.
+      }
+      rethrow;
+    }
 
     return user;
+  }
+
+  Future<UserModel> loadOrCreateUserProfile(User authUser) async {
+    final userRef = _firestore.collection('users').doc(authUser.uid);
+    final doc = await userRef.get();
+
+    if (doc.exists) {
+      return UserModel.fromFirestore(doc, authUser.uid);
+    }
+
+    final fallbackName = (authUser.email ?? 'usuario').split('@').first.trim();
+    final repairedUser = UserModel(
+      id: authUser.uid,
+      nombre: fallbackName.isEmpty ? 'Usuario' : fallbackName,
+      apellidoPaterno: '',
+      apellidoMaterno: '',
+      correo: authUser.email ?? '',
+      role: 'usuario',
+      createdAt: DateTime.now(),
+    );
+
+    await userRef.set(repairedUser.toFirestore());
+    return repairedUser;
   }
 
   Future<String?> getUserRole(String userId) async {
@@ -82,7 +106,7 @@ class AuthRepository {
     String? telefono,
     String? domicilio,
   }) async {
-    final Map<String, dynamic> datos = {};
+    final datos = <String, dynamic>{};
     if (telefono != null) datos['telefono'] = telefono;
     if (domicilio != null) datos['domicilio'] = domicilio;
 

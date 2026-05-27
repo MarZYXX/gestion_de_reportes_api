@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -27,8 +26,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ReportesViewModel>(context, listen: false)
-          .cambiarFiltro('todos');
+      Provider.of<ReportesViewModel>(
+        context,
+        listen: false,
+      ).cambiarFiltro('todos');
     });
   }
 
@@ -46,8 +47,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Cerrar sesión',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Cerrar sesión',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -58,7 +61,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     }
@@ -69,7 +72,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar reporte'),
-        content: const Text('¿Estás seguro de que deseas eliminar este reporte? Esta acción no se puede deshacer.'),
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar este reporte? Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -80,11 +85,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Navigator.pop(context);
               vm.eliminarReporteLocal(reportId);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Reporte eliminado'), backgroundColor: Colors.red),
+                const SnackBar(
+                  content: Text('Reporte eliminado'),
+                  backgroundColor: Colors.red,
+                ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -96,16 +107,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('reportes').doc(
-              reporteInicial.id).snapshots(),
+        return FutureBuilder<ReporteModel>(
+          future: ReporteService().obtenerReporte(reporteInicial.id),
           builder: (context, snapshot) {
             if (!snapshot.hasData)
               return const Center(child: CircularProgressIndicator());
 
-            final reporte = ReporteModel.fromFirestore(snapshot.data!);
+            final reporte = snapshot.data!;
             return DraggableScrollableSheet(
               initialChildSize: 0.5,
               minChildSize: 0.3,
@@ -134,45 +145,59 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             child: Text(
                               reporte.titulo,
                               style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold),
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           Chip(
                             label: Text(reporte.getTextoSeveridad()),
-                            backgroundColor:
-                            reporte.getColorSeveridad().withOpacity(0.2),
-                            labelStyle:
-                            TextStyle(color: reporte.getColorSeveridad()),
+                            backgroundColor: reporte
+                                .getColorSeveridad()
+                                .withOpacity(0.2),
+                            labelStyle: TextStyle(
+                              color: reporte.getColorSeveridad(),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(reporte.descripcion,
-                          style: const TextStyle(fontSize: 16)),
+                      Text(
+                        reporte.descripcion,
+                        style: const TextStyle(fontSize: 16),
+                      ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            '${reporte.fechaIncidente.day}/${reporte
-                                .fechaIncidente.month}/${reporte.fechaIncidente
-                                .year}',
+                            '${reporte.fechaIncidente.day}/${reporte.fechaIncidente.month}/${reporte.fechaIncidente.year}',
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                           const SizedBox(width: 16),
-                          Icon(Icons.access_time,
-                              size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
-                          Text(reporte.getHoraFormateada(),
-                              style: TextStyle(color: Colors.grey[600])),
+                          Text(
+                            reporte.getHoraFormateada(),
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       if (reporte.urlsImagenes.isNotEmpty) ...[
-                        const Text('Imágenes:',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Imágenes:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 8),
                         SizedBox(
                           height: 120,
@@ -183,13 +208,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: GestureDetector(
-                                  onTap: () =>
-                                      _verImagenPantallaCompleta(
-                                          reporte.urlsImagenes[index]),
+                                  onTap: () => _verImagenPantallaCompleta(
+                                    reporte.urlsImagenes[index],
+                                  ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: _construirImagenSegura(
-                                        reporte.urlsImagenes[index]),
+                                      reporte.urlsImagenes[index],
+                                    ),
                                   ),
                                 ),
                               );
@@ -204,15 +230,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              Provider
-                                  .of<MapaViewModel>(context, listen: false)
-                                  .corroborarReporte(reporte.id);
+                              Provider.of<MapaViewModel>(
+                                context,
+                                listen: false,
+                              ).corroborarReporte(reporte.id);
                             },
                             child: Column(
                               children: [
                                 Icon(
                                   reporte.corroboradoPor.contains(
-                                      FirebaseAuth.instance.currentUser?.uid)
+                                        FirebaseAuth.instance.currentUser?.uid,
+                                      )
                                       ? Icons.thumb_up
                                       : Icons.thumb_up_alt_outlined,
                                   color: Colors.blue,
@@ -229,8 +257,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             },
                             child: const Column(
                               children: [
-                                Icon(Icons.comment_outlined,
-                                    color: Colors.orange),
+                                Icon(
+                                  Icons.comment_outlined,
+                                  color: Colors.orange,
+                                ),
                                 SizedBox(height: 4),
                                 Text('Ver'),
                                 Text('Comentar'),
@@ -240,8 +270,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           Column(
                             children: [
                               Icon(
-                                reporte.estaCompleto ? Icons.verified : Icons
-                                    .pending_actions,
+                                reporte.estaCompleto
+                                    ? Icons.verified
+                                    : Icons.pending_actions,
                                 color: reporte.estaCompleto
                                     ? Colors.green
                                     : Colors.grey,
@@ -268,6 +299,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void _mostrarVentanaComentarios(BuildContext context, ReporteModel reporte) {
     final TextEditingController comentarioController = TextEditingController();
     final ReporteService reporteService = ReporteService();
+    VoidCallback recargarComentarios = () {};
 
     showModalBottomSheet(
       context: context,
@@ -275,7 +307,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             height: MediaQuery.of(context).size.height * 0.6,
             padding: const EdgeInsets.all(16),
@@ -285,71 +319,149 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
             child: Column(
               children: [
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 const SizedBox(height: 16),
-                const Text('Comentarios de los Vecinos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Comentarios de los Vecinos',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const Divider(),
 
                 Expanded(
-                  child: StreamBuilder<List<ComentarioModel>>(
-                    stream: reporteService.obtenerComentarios(reporte.id),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(
-                          child: Text('Aún no hay comentarios.\nSé el primero en aportar información.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                        );
-                      }
-
-                      final comentarios = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: comentarios.length,
-                        itemBuilder: (context, index) {
-                          final comentario = comentarios[index];
-                          final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-                          final esMiComentario = currentUserUid == comentario.userId;
-
-                          return Card(
-                            elevation: 0,
-                            color: Colors.grey.shade100,
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.blue.shade100,
-                                child: const Icon(Icons.person, color: Colors.blue),
+                  child: StatefulBuilder(
+                    builder: (context, setCommentsState) {
+                      recargarComentarios = () => setCommentsState(() {});
+                      return FutureBuilder<List<ComentarioModel>>(
+                        future: reporteService.obtenerComentarios(reporte.id),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'Aún no hay comentarios.\nSé el primero en aportar información.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
                               ),
-                              title: Text(esMiComentario ? 'Tú (Anónimo)' : 'Vecino Anónimo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(comentario.texto),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${comentario.fecha.day}/${comentario.fecha.month}/${comentario.fecha.year}',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                            );
+                          }
+
+                          final comentarios = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: comentarios.length,
+                            itemBuilder: (context, index) {
+                              final comentario = comentarios[index];
+                              final currentUserUid =
+                                  FirebaseAuth.instance.currentUser?.uid;
+                              final esMiComentario =
+                                  currentUserUid == comentario.userId;
+
+                              return Card(
+                                elevation: 0,
+                                color: Colors.grey.shade100,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.blue.shade100,
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.blue,
+                                    ),
                                   ),
-                                ],
-                              ),
-                              trailing: esMiComentario
-                                  ? PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert, color: Colors.grey),
-                                onSelected: (value) {
-                                  if (value == 'editar') {
-                                    _editarComentario(reporte.id, comentario, reporteService);
-                                  } else if (value == 'eliminar') {
-                                    _eliminarComentario(reporte.id, comentario.id, reporteService);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(value: 'editar', child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue), SizedBox(width: 8), Text('Editar')])),
-                                  const PopupMenuItem(value: 'eliminar', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Eliminar')])),
-                                ],
-                              )
-                                  : null,
-                            ),
+                                  title: Text(
+                                    esMiComentario
+                                        ? 'Tú (Anónimo)'
+                                        : 'Vecino Anónimo',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      Text(comentario.texto),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${comentario.fecha.day}/${comentario.fecha.month}/${comentario.fecha.year}',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: esMiComentario
+                                      ? PopupMenuButton<String>(
+                                          icon: const Icon(
+                                            Icons.more_vert,
+                                            color: Colors.grey,
+                                          ),
+                                          onSelected: (value) {
+                                            if (value == 'editar') {
+                                              _editarComentario(
+                                                reporte.id,
+                                                comentario,
+                                                reporteService,
+                                                recargarComentarios,
+                                              );
+                                            } else if (value == 'eliminar') {
+                                              _eliminarComentario(
+                                                reporte.id,
+                                                comentario.id,
+                                                reporteService,
+                                                recargarComentarios,
+                                              );
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem(
+                                              value: 'editar',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.edit,
+                                                    size: 18,
+                                                    color: Colors.blue,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text('Editar'),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'eliminar',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.delete,
+                                                    size: 18,
+                                                    color: Colors.red,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text('Eliminar'),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : null,
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -366,16 +478,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           hintText: 'Añadir un comentario (Anónimo)...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
                       child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: () async {
                           final texto = comentarioController.text.trim();
                           if (texto.isEmpty) return;
@@ -383,13 +507,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           final userId = FirebaseAuth.instance.currentUser?.uid;
                           if (userId != null) {
                             comentarioController.clear();
-                            await reporteService.agregarComentario(reporte.id, userId, texto);
+                            await reporteService.agregarComentario(
+                              reporte.id,
+                              userId,
+                              texto,
+                            );
+                            recargarComentarios();
                           }
                         },
                       ),
-                    )
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -398,8 +527,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  void _editarComentario(String reportId, ComentarioModel comentario, ReporteService servicio) {
-    final TextEditingController editController = TextEditingController(text: comentario.texto);
+  void _editarComentario(
+    String reportId,
+    ComentarioModel comentario,
+    ReporteService servicio,
+    VoidCallback onUpdated,
+  ) {
+    final TextEditingController editController = TextEditingController(
+      text: comentario.texto,
+    );
 
     showDialog(
       context: context,
@@ -423,7 +559,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
             onPressed: () async {
               final nuevoTexto = editController.text.trim();
               if (nuevoTexto.isNotEmpty && nuevoTexto != comentario.texto) {
-                await servicio.actualizarComentario(reportId, comentario.id, nuevoTexto);
+                await servicio.actualizarComentario(
+                  reportId,
+                  comentario.id,
+                  nuevoTexto,
+                );
+                onUpdated();
               }
               if (context.mounted) Navigator.pop(context);
             },
@@ -434,12 +575,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  void _eliminarComentario(String reportId, String comentarioId, ReporteService servicio) {
+  void _eliminarComentario(
+    String reportId,
+    String comentarioId,
+    ReporteService servicio,
+    VoidCallback onUpdated,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Comentario'),
-        content: const Text('¿Estás seguro de que deseas borrar este comentario? Esta acción no se puede deshacer.'),
+        content: const Text(
+          '¿Estás seguro de que deseas borrar este comentario? Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -449,9 +597,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               await servicio.eliminarComentario(reportId, comentarioId);
+              onUpdated();
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -460,7 +612,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _construirImagenSegura(String rutaOBase64) {
     try {
-      if (rutaOBase64.startsWith('/data') || rutaOBase64.startsWith('file://')) {
+      if (rutaOBase64.startsWith('/data') ||
+          rutaOBase64.startsWith('file://')) {
         return Image.file(
           File(rutaOBase64),
           width: 120,
@@ -522,9 +675,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   panEnabled: true,
                   minScale: 0.5,
                   maxScale: 4.0,
-                  child: Center(
-                    child: _construirImagenSegura(rutaOBase64),
-                  ),
+                  child: Center(child: _construirImagenSegura(rutaOBase64)),
                 ),
                 Positioned(
                   top: 40,
@@ -535,7 +686,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -550,7 +705,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
     );
   }
-
 
   void _abrirDetalleEdicion(BuildContext context, ReporteModel reporte) {
     Navigator.push(
@@ -581,8 +735,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
       body: Consumer<ReportesViewModel>(
         builder: (context, vm, child) {
-          if (vm.cargando) return const Center(child: CircularProgressIndicator());
-          if (vm.error != null) return Center(child: Text('Error: ${vm.error}', style: const TextStyle(color: Colors.red)));
+          if (vm.cargando)
+            return const Center(child: CircularProgressIndicator());
+          if (vm.error != null)
+            return Center(
+              child: Text(
+                'Error: ${vm.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
 
           final reportesMostrar = vm.reportesFiltrados.where((reporte) {
             if (reporte.esFalso) {
@@ -594,14 +755,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
           return Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 color: Colors.grey.shade50,
                 width: double.infinity,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      const Icon(Icons.filter_list, color: Colors.grey, size: 20),
+                      const Icon(
+                        Icons.filter_list,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       FilterChip(
                         label: const Text('Atendidos'),
@@ -614,28 +782,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         label: const Text('Mis reportes'),
                         selected: vm.filtroActual == 'mis_reportes',
                         selectedColor: Colors.blue.shade100,
-                        onSelected: (val) => vm.cambiarFiltro(val ? 'mis_reportes' : 'todos'),
+                        onSelected: (val) =>
+                            vm.cambiarFiltro(val ? 'mis_reportes' : 'todos'),
                       ),
                       const SizedBox(width: 8),
                       FilterChip(
                         label: const Text('Alta'),
                         selected: vm.filtroPrioridadLocal == 'alta',
                         selectedColor: Colors.red.shade100,
-                        onSelected: (val) => vm.setFiltroPrioridadLocal(val ? 'alta' : 'todas'),
+                        onSelected: (val) =>
+                            vm.setFiltroPrioridadLocal(val ? 'alta' : 'todas'),
                       ),
                       const SizedBox(width: 8),
                       FilterChip(
                         label: const Text('Media'),
                         selected: vm.filtroPrioridadLocal == 'media',
                         selectedColor: Colors.orange.shade100,
-                        onSelected: (val) => vm.setFiltroPrioridadLocal(val ? 'media' : 'todas'),
+                        onSelected: (val) =>
+                            vm.setFiltroPrioridadLocal(val ? 'media' : 'todas'),
                       ),
                       const SizedBox(width: 8),
                       FilterChip(
                         label: const Text('Baja'),
                         selected: vm.filtroPrioridadLocal == 'baja',
                         selectedColor: Colors.blue.shade100,
-                        onSelected: (val) => vm.setFiltroPrioridadLocal(val ? 'baja' : 'todas'),
+                        onSelected: (val) =>
+                            vm.setFiltroPrioridadLocal(val ? 'baja' : 'todas'),
                       ),
                     ],
                   ),
@@ -646,110 +818,205 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                 child: reportesMostrar.isEmpty
                     ? const Center(
-                  child: Text('No hay reportes que coincidan con los filtros.',
-                      style: TextStyle(color: Colors.grey, fontSize: 16)),
-                )
+                        child: Text(
+                          'No hay reportes que coincidan con los filtros.',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      )
                     : RefreshIndicator(
-                  onRefresh: () async => await vm.cargarReportes(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: reportesMostrar.length,
-                    itemBuilder: (context, index) {
-                      final ReporteModel reporte = reportesMostrar[index];
-                      final bool esPropio = reporte.userId == currentUserId;
+                        onRefresh: () async => await vm.cargarReportes(),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: reportesMostrar.length,
+                          itemBuilder: (context, index) {
+                            final ReporteModel reporte = reportesMostrar[index];
+                            final bool esPropio =
+                                reporte.userId == currentUserId;
 
-                      return Card(
-                        elevation: 2,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                              color: reporte.esFalso ? Colors.red : reporte.getColorSeveridad().withOpacity(0.5),
-                              width: 1
-                          ),
-                        ),
-                        child: ListTile(
-                          onTap: () => _mostrarDetallesReporte(reporte),
-                          contentPadding: const EdgeInsets.all(16),
-                          title: Text(
-                            reporte.titulo,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              decoration: reporte.esFalso ? TextDecoration.lineThrough : null,
-                            ),
-                          ),
-                          trailing: esPropio ? PopupMenuButton<OpcionesMenu>(
-                            icon: const Icon(Icons.more_vert, color: Colors.grey),
-                            onSelected: (opcion) {
-                              if (opcion == OpcionesMenu.eliminar) {
-                                _confirmarEliminacion(reporte.id, vm);
-                              } else if (opcion == OpcionesMenu.editar) {
-                                _abrirDetalleEdicion(context, reporte);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: OpcionesMenu.editar,
-                                child: Row(children: [Icon(Icons.edit, color: Colors.blue), SizedBox(width: 8), Text('Editar')]),
+                            return Card(
+                              elevation: 2,
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: reporte.esFalso
+                                      ? Colors.red
+                                      : reporte.getColorSeveridad().withOpacity(
+                                          0.5,
+                                        ),
+                                  width: 1,
+                                ),
                               ),
-                              const PopupMenuItem(
-                                value: OpcionesMenu.eliminar,
-                                child: Row(children: [Icon(Icons.delete, color: Colors.red), SizedBox(width: 8), Text('Eliminar')]),
+                              child: ListTile(
+                                onTap: () => _mostrarDetallesReporte(reporte),
+                                contentPadding: const EdgeInsets.all(16),
+                                title: Text(
+                                  reporte.titulo,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    decoration: reporte.esFalso
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
+                                ),
+                                trailing: esPropio
+                                    ? PopupMenuButton<OpcionesMenu>(
+                                        icon: const Icon(
+                                          Icons.more_vert,
+                                          color: Colors.grey,
+                                        ),
+                                        onSelected: (opcion) {
+                                          if (opcion == OpcionesMenu.eliminar) {
+                                            _confirmarEliminacion(
+                                              reporte.id,
+                                              vm,
+                                            );
+                                          } else if (opcion ==
+                                              OpcionesMenu.editar) {
+                                            _abrirDetalleEdicion(
+                                              context,
+                                              reporte,
+                                            );
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: OpcionesMenu.editar,
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.edit,
+                                                  color: Colors.blue,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text('Editar'),
+                                              ],
+                                            ),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: OpcionesMenu.eliminar,
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.delete,
+                                                  color: Colors.red,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text('Eliminar'),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : null,
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      reporte.descripcion,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          size: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(reporte.fechaIncidente),
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const Spacer(),
+
+                                        if (reporte.esFalso)
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                              right: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'Rechazado (Falso)',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          )
+                                        else if (reporte.estaCompleto)
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                              right: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'Atendido',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: reporte
+                                                .getColorSeveridad()
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            reporte.getTextoSeveridad(),
+                                            style: TextStyle(
+                                              color: reporte
+                                                  .getColorSeveridad(),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ) : null,
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              Text(reporte.descripcion, maxLines: 2, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    DateFormat('dd/MM/yyyy').format(reporte.fechaIncidente),
-                                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                                  ),
-                                  const Spacer(),
-
-                                  if (reporte.esFalso)
-                                    Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
-                                      child: const Text('Rechazado (Falso)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                    )
-                                  else if (reporte.estaCompleto)
-                                    Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                                      child: const Text('Atendido', style: TextStyle(color: Colors.white, fontSize: 10)),
-                                    ),
-
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: reporte.getColorSeveridad().withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      reporte.getTextoSeveridad(),
-                                      style: TextStyle(color: reporte.getColorSeveridad(), fontSize: 12, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      ),
               ),
             ],
           );

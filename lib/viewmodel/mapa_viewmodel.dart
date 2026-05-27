@@ -1,13 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:ui' as ui;
+
 import '../model/report_model.dart';
 import '../repo/reporte_service.dart';
 
 class MapaViewModel extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ReporteService _reporteService = ReporteService();
 
   bool cargando = true;
   String? error;
@@ -20,94 +18,59 @@ class MapaViewModel extends ChangeNotifier {
   Future<void> inicializarMapa() async {
     try {
       cargando = true;
+      error = null;
       notifyListeners();
-
       await _solicitarPermiso();
       posicionActual = await Geolocator.getCurrentPosition();
-
+      await cargarReportes();
+    } catch (e) {
+      error = e.toString();
+    } finally {
       cargando = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> cargarReportes() async {
+    try {
+      final todos = await _reporteService.obtenerTodosReportes(
+        estado: 'pendiente',
+      );
+      reportes = todos
+          .where((reporte) => !reporte.estaCompleto && !reporte.esFalso)
+          .toList();
+      error = null;
       notifyListeners();
     } catch (e) {
       error = e.toString();
-      cargando = false;
       notifyListeners();
     }
-  }
-
-  void cargarReportes() {
-    _firestore
-        .collection('reportes')
-        .snapshots()
-        .listen((snapshot) {
-
-      final List<ReporteModel> nuevosReportes = [];
-
-      for (var doc in snapshot.docs) {
-        final reporte = ReporteModel.fromFirestore(doc);
-
-        if (reporte.estaCompleto || reporte.esFalso) {
-          continue;
-        }
-
-        nuevosReportes.add(reporte);
-      }
-
-      reportes = nuevosReportes;
-      notifyListeners();
-    });
   }
 
   Future<void> _solicitarPermiso() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw Exception('Ubicación desactivada');
+      throw Exception('Ubicacion desactivada');
     }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-
+    var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      throw Exception('Permiso de ubicación denegado');
+      throw Exception('Permiso de ubicacion denegado');
     }
   }
 
   Future<void> corroborarReporte(String reportId) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-
     try {
-      await ReporteService().corroborarReporte(reportId, userId);
+      await _reporteService.corroborarReporte(reportId);
+      await cargarReportes();
     } catch (e) {
-      error = "Error al corroborar: $e";
+      error = 'Error al corroborar: $e';
       notifyListeners();
     }
   }
-}
-
-class _TrianglePainter extends CustomPainter {
-  final Color color;
-
-  _TrianglePainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = ui.Path();
-    path.moveTo(size.width / 2, 0);    
-    path.lineTo(0, size.height);  
-    path.lineTo(size.width, size.height); 
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

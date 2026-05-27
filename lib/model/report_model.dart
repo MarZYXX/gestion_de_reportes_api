@@ -65,6 +65,54 @@ class ReporteModel {
     );
   }
 
+  factory ReporteModel.fromJson(Map<String, dynamic> data) {
+    final ubicacionData =
+        data['ubicacion'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    return ReporteModel(
+      id: data['id']?.toString() ?? '',
+      userId: data['userId']?.toString() ?? '',
+      titulo: data['titulo']?.toString() ?? '',
+      descripcion: data['descripcion']?.toString() ?? '',
+      severidad: data['severidad']?.toString() ?? 'baja',
+      fechaIncidente: DateTime.parse(data['fechaIncidente'].toString()),
+      horaIncidente: TimeOfDay(
+        hour: (data['horaHora'] as num?)?.toInt() ?? 0,
+        minute: (data['horaMinuto'] as num?)?.toInt() ?? 0,
+      ),
+      ubicacion: GeoPoint(
+        (ubicacionData['latitud'] as num?)?.toDouble() ?? 0,
+        (ubicacionData['longitud'] as num?)?.toDouble() ?? 0,
+      ),
+      urlsImagenes: List<String>.from(data['urlsImagenes'] ?? []),
+      contadorCorroboraciones:
+          (data['contadorCorroboraciones'] as num?)?.toInt() ?? 0,
+      corroboradoPor: List<String>.from(data['corroboradoPor'] ?? []),
+      estaCompleto: data['estaCompleto'] == true,
+      fechaCreacion: DateTime.parse(data['fechaCreacion'].toString()),
+      fechaCompletado: data['fechaCompletado'] == null
+          ? null
+          : DateTime.parse(data['fechaCompletado'].toString()),
+      severidadModificadaPorAdmin: data['severidadModificadaPorAdmin'] == true,
+      esFalso: data['esFalso'] == true,
+    );
+  }
+
+  Map<String, dynamic> toApiJson() {
+    return {
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'severidad': severidad,
+      'fechaIncidente': fechaIncidente.toUtc().toIso8601String(),
+      'horaHora': horaIncidente.hour,
+      'horaMinuto': horaIncidente.minute,
+      'ubicacion': {
+        'latitud': ubicacion.latitude,
+        'longitud': ubicacion.longitude,
+      },
+      'urlsImagenes': urlsImagenes,
+    };
+  }
+
   Color getColorSeveridad() {
     switch (severidad) {
       case 'alta':

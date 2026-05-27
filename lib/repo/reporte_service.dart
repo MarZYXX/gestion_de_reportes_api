@@ -1,209 +1,128 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../model/comentario_model.dart';
 import '../model/report_model.dart';
+import 'api_client.dart';
 
 class ReporteService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ApiClient _api;
+
+  ReporteService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<void> crearReporte(ReporteModel reporte) async {
-    try {
-      await _firestore.collection('reportes').add({
-        'userId': reporte.userId,
-        'titulo': reporte.titulo,
-        'descripcion': reporte.descripcion,
-        'severidad': reporte.severidad,
-        'fechaIncidente': Timestamp.fromDate(reporte.fechaIncidente),
-        'horaHora': reporte.horaIncidente.hour,
-        'horaMinuto': reporte.horaIncidente.minute,
-        'ubicacion': reporte.ubicacion,
-        'urlsImagenes': reporte.urlsImagenes,
-        'contadorCorroboraciones': 0,
-        'corroboradoPor': [],
-        'estaCompleto': false,
-        'fechaCreacion': Timestamp.now(),
-        'fechaCompletado': null,
-        'severidadModificadaPorAdmin': false,
-      });
-    } catch (e) {
-      throw Exception('Error al crear reporte: $e');
-    }
+    await _api.post('/reportes', body: reporte.toApiJson());
   }
 
-  Stream<List<ReporteModel>> obtenerReportesPorUsuario(String userId) {
-    return _firestore
-        .collection('reportes')
-        .where('userId', isEqualTo: userId)
-        .orderBy('fechaCreacion', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ReporteModel.fromFirestore(doc)) 
-          .toList();
-    });
+  Future<List<ReporteModel>> obtenerReportesPorUsuario([String? userId]) async {
+    final data = await _api.get('/reportes/mios') as List<dynamic>;
+    return _toReports(data);
   }
 
-  Stream<List<ReporteModel>> obtenerTodosReportes() {
-    return _firestore
-        .collection('reportes')
-        .orderBy('fechaCreacion', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ReporteModel.fromFirestore(doc))
-          .toList();
-    });
+  Future<List<ReporteModel>> obtenerTodosReportes({
+    String? severidad,
+    String? estado,
+    String? orden,
+  }) async {
+    final query = <String, String>{
+      if (severidad != null) 'severidad': severidad,
+      if (estado != null) 'estado': estado,
+      if (orden != null) 'orden': orden,
+    };
+    final data = await _api.get('/reportes', query: query) as List<dynamic>;
+    return _toReports(data);
   }
 
-  Stream<List<ReporteModel>> obtenerReportesPorSeveridad(String severidad) {
-    return _firestore
-        .collection('reportes')
-        .where('severidad', isEqualTo: severidad)
-        .orderBy('fechaCreacion', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ReporteModel.fromFirestore(doc))
-          .toList();
-    });
+  Future<List<ReporteModel>> obtenerReportesPorSeveridad(String severidad) {
+    return obtenerTodosReportes(severidad: severidad);
   }
 
-  Stream<List<ReporteModel>> obtenerReportesOrdenadosPorCorroboraciones() {
-    return _firestore
-        .collection('reportes')
-        .orderBy('contadorCorroboraciones', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ReporteModel.fromFirestore(doc))
-          .toList();
-    });
+  Future<List<ReporteModel>> obtenerReportesOrdenadosPorCorroboraciones() {
+    return obtenerTodosReportes(orden: 'corroboraciones');
   }
 
-  Future<void> corroborarReporte(String reportId, String userId) async {
-    final reportRef = _firestore.collection('reportes').doc(reportId);
-
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(reportRef);
-      if (!snapshot.exists) return;
-
-      List<String> corroboradoPor = List<String>.from(snapshot.data()?['corroboradoPor'] ?? []);
-
-      if (corroboradoPor.contains(userId)) {
-        corroboradoPor.remove(userId);
-        transaction.update(reportRef, {
-          'contadorCorroboraciones': FieldValue.increment(-1),
-          'corroboradoPor': corroboradoPor,
-        });
-      } else {
-        corroboradoPor.add(userId);
-        transaction.update(reportRef, {
-          'contadorCorroboraciones': FieldValue.increment(1),
-          'corroboradoPor': corroboradoPor,
-        });
-      }
-    });
+  Future<ReporteModel> obtenerReporte(String reportId) async {
+    final data = await _api.get('/reportes/$reportId') as Map<String, dynamic>;
+    return ReporteModel.fromJson(data);
   }
 
-  Future<void> actualizarSeveridad(String reportId, String nuevaSeveridad) async {
-    try {
-      await _firestore.collection('reportes').doc(reportId).update({
-        'severidad': nuevaSeveridad,
-        'severidadModificadaPorAdmin': true,
-      });
-    } catch (e) {
-      throw Exception('Error al actualizar la severidad: $e');
-    }
+  Future<void> corroborarReporte(String reportId, [String? userId]) async {
+    await _api.post('/reportes/$reportId/corroborar');
+  }
+
+  Future<void> actualizarSeveridad(
+    String reportId,
+    String nuevaSeveridad,
+  ) async {
+    await _api.patch(
+      '/admin/reportes/$reportId/severidad',
+      body: {'severidad': nuevaSeveridad},
+    );
   }
 
   Future<void> eliminarReporte(String reportId) async {
-    try {
-      await _firestore.collection('reportes').doc(reportId).delete();
-    } catch (e) {
-      throw Exception('Error al eliminar reporte: $e');
-    }
+    await _api.delete('/reportes/$reportId');
   }
 
-  Future<void> actualizarReporte(String reportId, Map<String, dynamic> dataActualizada) async {
-    try {
-      await _firestore.collection('reportes').doc(reportId).update(dataActualizada);
-    } catch (e) {
-      throw Exception('Error al actualizar reporte: $e');
+  Future<void> actualizarReporte(
+    String reportId,
+    Map<String, dynamic> dataActualizada,
+  ) async {
+    final data = Map<String, dynamic>.from(dataActualizada);
+    final fecha = data['fechaIncidente'];
+    if (fecha is Timestamp) {
+      data['fechaIncidente'] = fecha.toDate().toUtc().toIso8601String();
+    } else if (fecha is DateTime) {
+      data['fechaIncidente'] = fecha.toUtc().toIso8601String();
     }
+    await _api.patch('/reportes/$reportId', body: data);
   }
 
   Future<void> marcarComoCompletado(String reportId) async {
-    await _firestore.collection('reportes').doc(reportId).update({
-      'estaCompleto': true,
-      'fechaCompletado': Timestamp.now(),
-    });
+    await _api.patch('/admin/reportes/$reportId/resolver');
   }
 
-  Future<void> agregarComentario(String reportId, String userId, String texto) async {
-    try {
-      await _firestore
-          .collection('reportes')
-          .doc(reportId)
-          .collection('comentarios')
-          .add({
-        'userId': userId,
-        'texto': texto,
-        'fecha': Timestamp.now(),
-      });
-    } catch (e) {
-      throw Exception('Error al agregar comentario: $e');
-    }
+  Future<void> agregarComentario(
+    String reportId,
+    String userId,
+    String texto,
+  ) async {
+    await _api.post('/reportes/$reportId/comentarios', body: {'texto': texto});
   }
 
-  Stream<List<ComentarioModel>> obtenerComentarios(String reportId) {
-    return _firestore
-        .collection('reportes')
-        .doc(reportId)
-        .collection('comentarios')
-        .orderBy('fecha', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ComentarioModel.fromFirestore(doc))
-          .toList();
-    });
+  Future<List<ComentarioModel>> obtenerComentarios(String reportId) async {
+    final data =
+        await _api.get('/reportes/$reportId/comentarios') as List<dynamic>;
+    return data
+        .map((item) => ComentarioModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> actualizarComentario(String reportId, String comentarioId, String nuevoTexto) async {
-    try {
-      await _firestore
-          .collection('reportes')
-          .doc(reportId)
-          .collection('comentarios')
-          .doc(comentarioId)
-          .update({
-        'texto': nuevoTexto,
-      });
-    } catch (e) {
-      throw Exception('Error al actualizar comentario: $e');
-    }
+  Future<void> actualizarComentario(
+    String reportId,
+    String comentarioId,
+    String nuevoTexto,
+  ) async {
+    await _api.patch(
+      '/reportes/$reportId/comentarios/$comentarioId',
+      body: {'texto': nuevoTexto},
+    );
   }
 
   Future<void> eliminarComentario(String reportId, String comentarioId) async {
-    try {
-      await _firestore
-          .collection('reportes')
-          .doc(reportId)
-          .collection('comentarios')
-          .doc(comentarioId)
-          .delete();
-    } catch (e) {
-      throw Exception('Error al eliminar comentario: $e');
-    }
+    await _api.delete('/reportes/$reportId/comentarios/$comentarioId');
   }
 
   Future<void> marcarComoFalso(String reportId) async {
-    try {
-      await _firestore.collection('reportes').doc(reportId).update({
-        'esFalso': true,
-        'estaCompleto': true,
-      });
-    } catch (e) {
-      throw Exception('Error al marcar como falso: $e');
-    }
+    await _api.patch('/admin/reportes/$reportId/falso');
+  }
+
+  Future<Map<String, dynamic>> obtenerCiudadanoAdmin(String userId) async {
+    return await _api.get('/admin/usuarios/$userId') as Map<String, dynamic>;
+  }
+
+  List<ReporteModel> _toReports(List<dynamic> data) {
+    return data
+        .map((item) => ReporteModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 }
