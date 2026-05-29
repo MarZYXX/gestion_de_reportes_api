@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 
 import 'user_model.dart';
 
@@ -20,8 +19,6 @@ class AuthRepository {
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
       final dataUrl = 'data:image/jpeg;base64,$base64Image';
-
-      debugPrint('Tamano del Base64: ${dataUrl.length} caracteres');
 
       await _firestore.collection('users').doc(uid).update({
         'fotoUrl': dataUrl,
@@ -65,7 +62,7 @@ class AuthRepository {
         await userCredential.user?.delete();
         await _auth.signOut();
       } catch (_) {
-        // If rollback fails, login repairs this Authentication-only account.
+        // Si el rollback falla, el login repara la cuenta creada solo en Authentication.
       }
       rethrow;
     }

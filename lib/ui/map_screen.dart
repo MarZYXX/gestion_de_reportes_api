@@ -222,7 +222,6 @@ class _MapScreenState extends State<MapScreen> {
 
                           GestureDetector(
                             onTap: () {
-                              // TODO: Abrir ventana de comentarios
                               _mostrarVentanaComentarios(context, reporte);
                             },
                             child: const Column(

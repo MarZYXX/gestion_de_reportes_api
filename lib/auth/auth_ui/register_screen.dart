@@ -296,7 +296,7 @@ class _RegisterPageState extends State<RegisterPage> {
       nombre: _nombreController.text.trim(),
       apellidoPaterno: _apellidoPaternoController.text.trim(),
       apellidoMaterno: _apellidoMaternoController.text.trim(),
-      correo: _emailController.text.trim(), // Se envía libre, como estaba
+      correo: _emailController.text.trim(),
       contrasena: _passwordController.text.trim(),
     );
 

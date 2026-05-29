@@ -753,7 +753,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                                   fontSize: 16,
                                   decoration: reporte.esFalso
                                       ? TextDecoration.lineThrough
-                                      : null, // Tachamos el título si es falso
+                                      : null,
                                 ),
                               ),
                               subtitle: Column(
